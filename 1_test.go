@@ -69,16 +69,16 @@ func bind(node map[string]any, path string) {
 		}
 	}
 
-	for _, objects := range info.Structs {
-		for j, field := range objects.Fields {
+	for _, object := range info.Structs {
+		for j, field := range object.Fields {
 			switch j {
 			case 0:
-				g.P("type ", objects.Name, " struct {")
+				g.P("type ", object.Name, " struct {")
 				g.P(field.Name, " ", field.Type)
 			default:
 				g.P(field.Name, " ", field.Type)
 			}
-			if j == len(objects.Fields)-1 {
+			if j == len(object.Fields)-1 {
 				g.P("}")
 			}
 		}
@@ -390,11 +390,11 @@ func asNode(value any) iter.Seq2[string, any] {
 
 func asString(value any) iter.Seq[string] {
 	return func(yield func(string) bool) {
-		v, ok := value.(string)
+		s, ok := value.(string)
 		if !ok {
 			return
 		}
-		if !yield(v) {
+		if !yield(s) {
 			return
 		}
 	}
