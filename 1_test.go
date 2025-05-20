@@ -251,7 +251,7 @@ func parseEnum(node map[string]any) iter.Seq[Enum] {
 					for s := range asString(v) {
 						switch s {
 						case "EnumConstantDecl":
-							intValue := mylog.Check2(strconv.Atoi(s))
+							intValue := mylog.Check2(strconv.Atoi(s)) //todo
 							e.Values = append(e.Values, EnumValue{
 								Name:  name,
 								Value: intValue,
@@ -269,7 +269,7 @@ func parseEnum(node map[string]any) iter.Seq[Enum] {
 						name = s
 					}
 				case "type":
-					e.Type = bindType(k, v)
+					e.Type = bindType(v)
 				}
 				if !yield(e) {
 					return
@@ -309,7 +309,7 @@ func parseStruct(node map[string]any) iter.Seq[Struct] {
 					case "type":
 						obj.Fields = append(obj.Fields, Field{
 							Name: name,
-							Type: bindType(k, v),
+							Type: bindType(v),
 						})
 					}
 				}
@@ -326,7 +326,7 @@ func parseFunction(node map[string]any) iter.Seq[Function] {
 		for k, v := range node {
 			f := Function{
 				Name:       node["name"].(string),
-				ReturnType: bindType(k, v),
+				ReturnType: bindType(node["type"]),
 			}
 			for k, v := range asInner(k, v) {
 				name := ""
@@ -345,7 +345,7 @@ func parseFunction(node map[string]any) iter.Seq[Function] {
 				case "type":
 					f.Params = append(f.Params, Param{
 						Name: name,
-						Type: bindType(k, v),
+						Type: bindType(v),
 					})
 				}
 				if !yield(f) {
@@ -400,10 +400,7 @@ func asString(value any) iter.Seq[string] {
 	}
 }
 
-func bindType(k string, value any) string {
-	if k != "type" {
-		panic("not found type")
-	}
+func bindType(value any) string {
 	for k, v := range asNode(value) {
 		if k == "qualType" {
 			for s := range asString(v) {
@@ -442,8 +439,5 @@ func bindType(k string, value any) string {
 			}
 		}
 	}
-	return ""
-	mylog.Info(k)
-	mylog.Struct(value)
-	panic("not found type") //loc
+	panic("not found qualType")
 }
