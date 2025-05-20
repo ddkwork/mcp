@@ -61,7 +61,7 @@ func bind(node map[string]any, path string) {
 				g.P("const (")
 				g.P(v.Name, " ", enum.Type, " = iota +"+strconv.Itoa(v.Value))
 			default:
-				g.P(v.Name, " ", enum.Type, "=", v.Value)
+				g.P(v.Name, " ", "=", v.Value)
 			}
 			if j == len(enum.Values)-1 {
 				g.P(")")
