@@ -384,43 +384,44 @@ func asString(value any) iter.Seq[string] {
 }
 
 func bindType(k string, value any) string {
-	if k == "type" {
-		for k, v := range asNode(value) {
-			if k == "qualType" {
-				for s := range asString(v) {
-					return strings.NewReplacer(
-						"double", "float64",
-						"long double", "float128",
-						"int", "int",
-						"DWORD", "uint32",
-						"DWORD32", "uint32",
-						"DWORD64", "uint64",
-						"Long", "int32",
-						"ULong", "uint32",
-						"ULONGLONG", "uint64",
-						"ULong32", "uint32",
-						"ULong64", "uint64",
-						"UShort32", "uint16",
-						"ULongLong", "uint64",
-						"UShort", "uint16",
-						"UChar", "byte",
-						"UByte", "byte",
-						"unsigned int", "uint",
-						"long long", "int64",
-						"unsigned long long", "uint64",
-						"long", "int32",
-						"unsigned long", "uint32",
-						"short", "int16",
-						"unsigned short", "uint16",
-						"char", "int8",
-						"unsigned char", "byte",
-						"float", "float32",
-						"double", "float64",
-						"bool", "bool",
-						"void", "void",
-						"const char *", "string", //todo byte* ?
-					).Replace(s) //todo bind mcp cpp json type check and convert code gen
-				}
+	if k != "type" {
+		panic("not found type")
+	}
+	for k, v := range asNode(value) {
+		if k == "qualType" {
+			for s := range asString(v) {
+				return strings.NewReplacer(
+					"double", "float64",
+					"long double", "float128",
+					"int", "int",
+					"DWORD", "uint32",
+					"DWORD32", "uint32",
+					"DWORD64", "uint64",
+					"Long", "int32",
+					"ULong", "uint32",
+					"ULONGLONG", "uint64",
+					"ULong32", "uint32",
+					"ULong64", "uint64",
+					"UShort32", "uint16",
+					"ULongLong", "uint64",
+					"UShort", "uint16",
+					"UChar", "byte",
+					"UByte", "byte",
+					"unsigned int", "uint",
+					"long long", "int64",
+					"unsigned long long", "uint64",
+					"long", "int32",
+					"unsigned long", "uint32",
+					"short", "int16",
+					"unsigned short", "uint16",
+					"char", "int8",
+					"unsigned char", "byte",
+					"float", "float32",
+					"double", "float64",
+					"bool", "bool",
+					"void", "void",
+					"const char *", "string", //todo byte* ?
+				).Replace(s) //todo bind mcp cpp json type check and convert code gen
 			}
 		}
 	}
