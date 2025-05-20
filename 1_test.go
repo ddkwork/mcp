@@ -142,6 +142,28 @@ type Param struct {
 	Type string
 }
 
+var Flags = `
+		"-fno-builtin"
+		"-nostdinc"
+		//"-DVOID=void"
+#define _WIN32_WINNT 0x0601
+`
+
+func extractFlags() []string {
+	f := make([]string, 0)
+	for s := range strings.Lines(Flags) {
+		switch {
+		case !strings.HasPrefix(s, "//"):
+			s = strings.TrimSpace(s)
+		case strings.HasPrefix(s, "#define"):
+			s = strings.TrimSpace(strings.TrimPrefix(s, "#define"))
+		default:
+			s = strings.TrimSpace(s)
+		}
+	}
+	return f
+}
+
 func runClangASTDump(file string) []byte {
 	stream.WriteTruncate("fake.h", `
 #include <intrin.h>
@@ -152,10 +174,6 @@ func runClangASTDump(file string) []byte {
 		"-Xclang",
 		"-ast-dump=json",
 		"-fsyntax-only",
-		// "-fno-builtin",
-		// "-nostdinc",
-		// "-DVOID=void",
-		//"-D__cplusplus",
 	}
 	// includes := vswhere.New().VisualStudio().Includes
 	// for _, include := range includes {
@@ -163,7 +181,7 @@ func runClangASTDump(file string) []byte {
 	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
 	// }
 
-	arg = append(arg, "fake.h")
+	//arg = append(arg, extractFlags()...)//todo test flags
 	arg = append(arg, file)
 	out := stream.RunCommandArgs(arg...)
 	stream.WriteTruncate(file+".json", out.Output)
