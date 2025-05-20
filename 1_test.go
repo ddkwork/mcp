@@ -143,6 +143,7 @@ type Param struct {
 }
 
 var Flags = `
+#include <intrin.h>
 		"-fno-builtin"
 		"-nostdinc"
 		//"-DVOID=void"
@@ -157,6 +158,8 @@ func extractFlags() []string {
 			s = strings.TrimSpace(s)
 		case strings.HasPrefix(s, "#define"):
 			s = strings.TrimSpace(strings.TrimPrefix(s, "#define"))
+		case strings.HasPrefix(s, "#include"): //todo
+
 		default:
 			s = strings.TrimSpace(s)
 		}
@@ -165,10 +168,6 @@ func extractFlags() []string {
 }
 
 func runClangASTDump(file string) []byte {
-	stream.WriteTruncate("fake.h", `
-#include <intrin.h>
-
-`)
 	arg := []string{
 		"clang-cl",
 		"-Xclang",
