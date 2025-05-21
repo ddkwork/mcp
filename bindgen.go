@@ -3,16 +3,148 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/ddkwork/golibrary/mylog"
-	"github.com/ddkwork/golibrary/stream"
-	"log"
+	"github.com/tidwall/gjson"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/tidwall/gjson"
+	"github.com/ddkwork/golibrary/mylog"
+	"github.com/ddkwork/golibrary/stream"
 )
+
+func TestName(t *testing.T) {
+	//jsonData := mylog.Check2(os.ReadFile("2.json"))
+	jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
+
+	root := gjson.Parse(string(jsonData))
+	results := traverseNode(root)
+
+	// 生成所有代码
+	var buffer bytes.Buffer
+	generateAllCode(&buffer, results)
+	//source, err := format.Source(buffer.Bytes())
+	stream.WriteGoFile("tmp/1_gen.go", buffer.String())
+}
+
+func TestClangExecution(t *testing.T) {
+	//fakeError.Walk(".")
+	filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
+		if filepath.Ext(path) == ".h" {
+			if filepath.Base(path) != "bridgemain.h" {
+				return nil
+			}
+			output := runClangASTDump(path)
+			rootNode := parseAST(output)
+			bind(rootNode, path)
+
+		}
+		return err
+	})
+}
+
+func bind(node map[string]any, path string) {
+	info := collectCodeInfo(node)
+	//mylog.Struct(info)
+
+	// todo 不合并头文件的话，应该在下面的操作之前map去重一波，最终的输出在第一次发现的文件中?
+	g := stream.NewGeneratedFile()
+	g.P("package main")
+	for _, enum := range info.Enums {
+		for j, v := range enum.Values {
+			switch j {
+			case 0:
+				g.P("const (")
+				g.P(v.Name, " ", enum.Type, " = iota +"+strconv.Itoa(v.Value))
+			default:
+				g.P(v.Name, " ", "=", v.Value)
+			}
+			if j == len(enum.Values)-1 {
+				g.P(")")
+			}
+		}
+	}
+
+	for _, object := range info.Structs {
+		for j, field := range object.Fields {
+			switch j {
+			case 0:
+				g.P("type ", object.Name, " struct {")
+				g.P(field.Name, " ", field.Type)
+			default:
+				g.P(field.Name, " ", field.Type)
+			}
+			if j == len(object.Fields)-1 {
+				g.P("}")
+			}
+		}
+	}
+
+	for i, function := range info.Functions {
+		switch i {
+		case 0:
+			g.P("func "+
+				stream.ToCamelUpper(function.Name),
+				function.Params,
+				function.ReturnType,
+				" {")
+		default:
+			g.P(function.Name, function.ReturnType, "(", function.Params, ")")
+		}
+		if i == len(info.Functions)-1 {
+			g.P("panic(", strconv.Quote("implement me"), ")")
+			g.P("}")
+		}
+	}
+	stream.WriteGoFile(filepath.Join("tmp", filepath.Base(path)+"_gen.go"), g.String())
+}
+
+var Flags = `
+#include <intrin.h>
+		"-fno-builtin"
+		"-nostdinc"
+		//"-DVOID=void"
+#define _WIN32_WINNT 0x0601
+`
+
+func extractFlags() []string {
+	f := make([]string, 0)
+	for s := range strings.Lines(Flags) {
+		switch {
+		case !strings.HasPrefix(s, "//"):
+			s = strings.TrimSpace(s)
+		case strings.HasPrefix(s, "#define"):
+			s = strings.TrimSpace(strings.TrimPrefix(s, "#define"))
+		case strings.HasPrefix(s, "#include"): //todo
+
+		default:
+			s = strings.TrimSpace(s)
+		}
+	}
+	return f
+}
+
+func runClangASTDump(file string) []byte {
+	arg := []string{
+		"clang-cl",
+		"-Xclang",
+		"-ast-dump=json",
+		"-fsyntax-only",
+	}
+	// includes := vswhere.New().VisualStudio().Includes
+	// for _, include := range includes {
+	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk")
+	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
+	// }
+
+	//arg = append(arg, extractFlags()...)//todo test flags
+	arg = append(arg, file)
+	out := stream.RunCommandArgs(arg...)
+	stream.WriteTruncate(file+".json", out.Output)
+	return out.Output.Bytes()
+}
 
 // ----------------- 完整数据结构定义 -----------------
 type (
@@ -63,21 +195,6 @@ type (
 		Typedefs  map[string]string
 	}
 )
-
-// ----------------- 完整解析逻辑 -----------------
-func TestName(t *testing.T) {
-	jsonData := mylog.Check2(os.ReadFile("2.json"))
-	//jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
-
-	root := gjson.Parse(string(jsonData))
-	results := traverseNode(root)
-
-	// 生成所有代码
-	var buffer bytes.Buffer
-	generateAllCode(&buffer, results)
-	//source, err := format.Source(buffer.Bytes())
-	stream.WriteGoFile("tmp/1_gen.go", buffer.String())
-}
 
 func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
@@ -242,6 +359,39 @@ func parseNumber(s string) (int, error) {
 }
 
 func resolveType(typeNode gjson.Result) string {
+	return strings.NewReplacer(
+		"double", "float64",
+		"long double", "float128",
+		"int", "int",
+		"DWORD", "uint32",
+		"DWORD32", "uint32",
+		"DWORD64", "uint64",
+		"Long", "int32",
+		"ULong", "uint32",
+		"ULONGLONG", "uint64",
+		"ULong32", "uint32",
+		"ULong64", "uint64",
+		"UShort32", "uint16",
+		"ULongLong", "uint64",
+		"UShort", "uint16",
+		"UChar", "byte",
+		"UByte", "byte",
+		"unsigned int", "uint",
+		"long long", "int64",
+		"unsigned long long", "uint64",
+		"long", "int32",
+		"unsigned long", "uint32",
+		"short", "int16",
+		"unsigned short", "uint16",
+		"char", "int8",
+		"unsigned char", "byte",
+		"float", "float32",
+		"double", "float64",
+		"bool", "bool",
+		"void", "void",
+		"const char *", "string", //todo byte* ?
+	).Replace(typeNode.Get("qualType").String()) //todo bind mcp cpp json type check and convert code gen
+
 	typeMappings := map[string]string{
 		"unsigned long": "uint32",
 		"char *":        "string",
