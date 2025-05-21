@@ -7,7 +7,6 @@ import (
 	"github.com/ddkwork/golibrary/stream"
 	"github.com/tidwall/gjson"
 	"io/fs"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -183,7 +182,7 @@ func parseEnum(node gjson.Result) EnumInfo {
 		if member.Get("kind").String() == "EnumConstantDecl" {
 			explicit, computed := resolveEnumValue(member, nextValue)
 			if explicit != "" {
-				if val, err := parseNumber(explicit); err == nil {
+				if val, e := parseNumber(explicit); e == nil {
 					nextValue = val + 1
 				}
 			} else {
@@ -265,11 +264,8 @@ func resolveEnumValue(node gjson.Result, defaultVal int) (string, int) {
 	}
 
 	if explicit != "" {
-		val, err := parseNumber(explicit)
-		if err != nil {
-			log.Printf("WARN: Invalid value %q, using %d", explicit, defaultVal)
-			return explicit, defaultVal
-		}
+		val := mylog.Check2(parseNumber(explicit))
+
 		return explicit, val
 	}
 	return "", defaultVal
@@ -280,12 +276,12 @@ func parseNumber(s string) (int, error) {
 	if strings.HasPrefix(s, "0x") {
 		s = s[2:]
 		base = 16
-		i, err := strconv.ParseInt(s, base, 32)
-		return int(i), err
+		i, e := strconv.ParseInt(s, base, 32)
+		return int(i), e
 	} else if strings.HasPrefix(s, "0") && len(s) > 1 {
 		base = 8
-		i, err := strconv.ParseInt(s, base, 32)
-		return int(i), err
+		i, e := strconv.ParseInt(s, base, 32)
+		return int(i), e
 	}
 	return strconv.Atoi(s)
 }
