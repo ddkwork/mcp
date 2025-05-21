@@ -81,12 +81,15 @@ func TestName(t *testing.T) {
 
 func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
-
+	info := EnumInfo{}
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
 		switch kind := n.Get("kind").String(); kind {
 		case "EnumDecl":
-			result.Enums = append(result.Enums, parseEnum(n))
+			info = parseEnum(n)
+			if info.Name != "" {
+				result.Enums = append(result.Enums, info)
+			}
 		case "RecordDecl":
 			if n.Get("name").String() != "_GUID" {
 				if n.Get("tagUsed").String() == "struct" {
@@ -100,7 +103,8 @@ func traverseNode(node gjson.Result) (result Result) {
 			mylog.Success(qualType)
 			switch {
 			case strings.HasPrefix(qualType, "enum "):
-				result.Enums = append(result.Enums, parseEnum(n))
+				info.Name = strings.TrimPrefix(qualType, "enum ")
+				result.Enums = append(result.Enums, info)
 			default:
 				name := n.Get("name").String()
 				if target := n.Get("type.qualType").String(); target != "" {
