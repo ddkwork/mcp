@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"iter"
 	"os"
@@ -15,7 +16,8 @@ import (
 )
 
 func TestName(t *testing.T) {
-	f := mylog.Check2(os.Open("bridgemain.h.json"))
+	//f := mylog.Check2(os.Open("bridgemain.h.json"))
+	f := mylog.Check2(os.Open("2.json"))
 	decoder := json.NewDecoder(f)
 	i := 0
 	for decoder.More() {
@@ -239,30 +241,100 @@ func collectCodeInfo(root map[string]any) CodeInfo {
 	return info
 }
 
+func hasInner(elem any) ([]any, bool) {
+	node, ok := elem.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	v, b := node["inner"]
+	return v.([]any), b
+}
+
+// Traverse the object recursively and print every path / value pair.
+func traverse(path string, obj interface{}) {
+	switch obj.(type) {
+	case []interface{}:
+		for i, subnode := range obj.([]interface{}) {
+			traverse(fmt.Sprintf("%s[%d]", path, i), subnode)
+		}
+	case map[string]interface{}:
+		for k, v := range obj.(map[string]interface{}) {
+			traverse(fmt.Sprintf("%s[%q]", path, k), v)
+		}
+	case string:
+		fmt.Printf("%s => %q\n", path, obj)
+	case float64:
+		f := obj.(float64)
+		num := int(f)
+		if f == float64(num) {
+			// the number is an integer
+			fmt.Printf("%s => %d\n", path, num)
+		} else {
+			fmt.Printf("%s => %f\n", path, f)
+		}
+	default:
+		fmt.Printf("%s => %v\n", path, obj)
+	}
+}
+
 func parseEnum(node map[string]any) iter.Seq[Enum] {
 	return func(yield func(Enum) bool) {
+
+		//todo json path, node keys
+		//"name": "Color" -->
+		//"name": "Color" --> inner --> "name": "RED",  "type": { "qualType": "int"
+		//"name": "Color" --> inner --> "name": "YELLOW",  "type": { "qualType": "int"  "inner": [  "value": "99",
+
+		currentValue := 0
+		//kind:=node["kind"].(string)
+
+		//
+
+		e := Enum{Name: node["name"].(string), Values: []EnumValue{}}
+
+		for k, v := range asNode(node["inner"]) {
+			Type := bindType(node["type"])
+			value := EnumValue{
+				Name:  node["name"].(string),
+				Value: 0,
+			}
+			valueStr := ""
+			inner, b := hasInner(v)
+			if b {
+				for i, a := range inner {
+					v, ok := node["value"]
+					if ok {
+						value = v.(string)
+					}
+				}
+
+			}
+			e.Values = append(e.Values, value)
+		}
+
+		switch kind {
+		case "EnumConstantDecl":
+			intValue := mylog.Check2(strconv.Atoi(value))
+			e.Values = append(e.Values, EnumValue{
+				Name:  name,
+				Value: intValue,
+			})
+			currentValue = intValue + 1
+		case "ConstantExpr":
+			e.Values = append(e.Values, EnumValue{Name: name, Value: currentValue})
+			currentValue++
+		default:
+			panic("not found kind:" + kind)
+		}
+
 		for k, v := range node {
-			e := Enum{Name: k, Values: []EnumValue{}}
 			for k, v := range asInner(k, v) {
-				currentValue := 0
+
 				name := ""
 				switch k {
 				case "kind":
 					for s := range asString(v) {
-						switch s {
-						case "EnumConstantDecl":
-							intValue := mylog.Check2(strconv.Atoi(s)) //todo
-							e.Values = append(e.Values, EnumValue{
-								Name:  name,
-								Value: intValue,
-							})
-							currentValue = intValue + 1
-						case "ConstantExpr":
-							e.Values = append(e.Values, EnumValue{Name: name, Value: currentValue})
-							currentValue++
-						default:
-							panic("not found kind:" + s)
-						}
+
 					}
 				case "name":
 					for s := range asString(v) {
