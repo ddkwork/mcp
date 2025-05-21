@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ddkwork/golibrary/mylog"
+	"github.com/ddkwork/golibrary/stream"
 	"log"
 	"os"
 	"strconv"
@@ -64,16 +66,17 @@ type (
 
 // ----------------- 完整解析逻辑 -----------------
 func TestName(t *testing.T) {
-	// 完整测试数据（包含所有节点类型）
-	jsonData := mylog.Check2(os.ReadFile("2.json"))
-	//jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
+	//jsonData := mylog.Check2(os.ReadFile("2.json"))
+	jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
 
 	root := gjson.Parse(string(jsonData))
 	results := traverseNode(root)
 
 	// 生成所有代码
-	fmt.Println("// Auto-generated code")
-	generateAllCode(results)
+	var buffer bytes.Buffer
+	generateAllCode(&buffer, results)
+	//source, err := format.Source(buffer.Bytes())
+	stream.WriteGoFile("tmp/1_gen.go", buffer.String())
 }
 
 func traverseNode(node gjson.Result) (result Result) {
@@ -230,6 +233,7 @@ func resolveType(typeNode gjson.Result) string {
 		"unsigned long": "uint32",
 		"char *":        "string",
 		"int":           "int32",
+		"char[50]":      "[50]int8",
 	}
 
 	qualType := typeNode.Get("qualType").String()
@@ -261,57 +265,62 @@ func formatLoc(loc gjson.Result) string {
 }
 
 // ----------------- 完整代码生成器 -----------------
-func generateAllCode(results Result) {
+func generateAllCode(buffer *bytes.Buffer, results Result) {
 	// 生成枚举
+	buffer.WriteString("package main\n")
 	for _, e := range results.Enums {
-		fmt.Printf("type %s int // %s\nconst (\n", e.Name, e.Loc)
+		buffer.WriteString(fmt.Sprintf("type %s int // %s\nconst (\n", e.Name, e.Loc))
 		for i, m := range e.Members {
 			line := fmt.Sprintf("\t%s", m.Name)
 			if i == 0 {
-				line += " = iota"
+				line += " " + e.Name + " = iota"
 			} else if m.ExplicitValue != "" {
 				line += " = " + m.ExplicitValue
 			}
-			fmt.Printf("%s // %d\n", line, m.ComputedValue)
+			buffer.WriteString(fmt.Sprintf("%s // %d\n", line, m.ComputedValue))
 		}
-		fmt.Println(")")
+		buffer.WriteString(")\n")
+
 	}
 
 	// 生成结构体
 	for _, s := range results.Structs {
-		fmt.Printf("// %s (%s)\n", s.Name, s.Loc)
-		fmt.Printf("type %s struct {\n", s.Name)
+		if s.Name == "_GUID" {
+			continue
+		}
+		buffer.WriteString(fmt.Sprintf("// %s (%s)\n", s.Name, s.Loc))
+		buffer.WriteString(fmt.Sprintf("type %s struct {\n", s.Name))
 		for _, f := range s.Fields {
-			fmt.Printf("\t%s %s // C type: %s\n",
+			buffer.WriteString(fmt.Sprintf("\t%s %s // C type: %s\n",
 				strings.Title(f.Name),
 				f.TypeDecl,
-				f.Type)
+				f.Type))
 		}
-		fmt.Println("}")
+		buffer.WriteString("}\n")
 
 		// 生成方法
 		for _, m := range s.Methods {
-			fmt.Printf("func (this *%s) %s(", s.Name, m.Name)
+			buffer.WriteString(fmt.Sprintf("func (this *%s) %s(", s.Name, m.Name))
 			params := make([]string, len(m.Params))
 			for i, p := range m.Params {
 				params[i] = fmt.Sprintf("%s %s", p.Name, p.Type)
 			}
-			fmt.Printf("%s) %s {\n\t// TODO: implement\n}\n\n",
+			buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement\n}\n\n",
 				strings.Join(params, ", "),
-				m.ReturnType)
+				m.ReturnType))
 		}
 	}
 
 	// 生成函数
 	for _, f := range results.Functions {
-		fmt.Printf("// %s (%s)\n", f.Name, f.Loc)
-		fmt.Printf("func %s(", f.Name)
+		buffer.WriteString(fmt.Sprintf("// %s (%s)\n", f.Name, f.Loc))
+		buffer.WriteString(fmt.Sprintf("func %s(", f.Name))
 		params := make([]string, len(f.Params))
 		for i, p := range f.Params {
 			params[i] = fmt.Sprintf("%s %s", p.Name, p.Type)
 		}
-		fmt.Printf("%s) %s {\n\t// TODO: implement\n}\n\n",
+		buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement\n}\n\n",
 			strings.Join(params, ", "),
-			f.ReturnType)
+			f.ReturnType))
 	}
 }
