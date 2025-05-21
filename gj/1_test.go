@@ -66,8 +66,8 @@ type (
 
 // ----------------- 完整解析逻辑 -----------------
 func TestName(t *testing.T) {
-	//jsonData := mylog.Check2(os.ReadFile("2.json"))
-	jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
+	jsonData := mylog.Check2(os.ReadFile("2.json"))
+	//jsonData := mylog.Check2(os.ReadFile("D:\\workspace\\workspace\\mcp\\bridgemain.h.json"))
 
 	root := gjson.Parse(string(jsonData))
 	results := traverseNode(root)
@@ -88,15 +88,24 @@ func traverseNode(node gjson.Result) (result Result) {
 		case "EnumDecl":
 			result.Enums = append(result.Enums, parseEnum(n))
 		case "RecordDecl":
-			if n.Get("tagUsed").String() == "struct" {
-				result.Structs = append(result.Structs, parseStruct(n))
+			if n.Get("name").String() != "_GUID" {
+				if n.Get("tagUsed").String() == "struct" {
+					result.Structs = append(result.Structs, parseStruct(n))
+				}
 			}
 		case "FunctionDecl", "CXXMethodDecl":
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
-			name := n.Get("name").String()
-			if target := n.Get("type.qualType").String(); target != "" {
-				result.Typedefs[name] = target
+			qualType := n.Get("type.qualType").String()
+			mylog.Success(qualType)
+			switch {
+			case strings.HasPrefix(qualType, "enum "):
+				result.Enums = append(result.Enums, parseEnum(n))
+			default:
+				name := n.Get("name").String()
+				if target := n.Get("type.qualType").String(); target != "" {
+					result.Typedefs[name] = target
+				}
 			}
 		}
 
@@ -285,9 +294,6 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 
 	// 生成结构体
 	for _, s := range results.Structs {
-		if s.Name == "_GUID" {
-			continue
-		}
 		buffer.WriteString(fmt.Sprintf("// %s (%s)\n", s.Name, s.Loc))
 		buffer.WriteString(fmt.Sprintf("type %s struct {\n", s.Name))
 		for _, f := range s.Fields {

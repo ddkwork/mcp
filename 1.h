@@ -4,6 +4,18 @@
      YELLOW =99
  };
 
+typedef enum
+{
+    SEG_DEFAULT,
+    SEG_ES,
+    SEG_DS,
+    SEG_FS,
+    SEG_GS,
+    SEG_CS,
+    SEG_SS
+} SEGMENTREG;
+
+
  struct Car {
      char make[50];
      int year;
@@ -13,7 +25,7 @@ int add (int a, int b){
     return a+b;
 };
 
-//clang -Xclang -ast-dump=json -fsyntax-only ./1.h
+//clang -Xclang -ast-dump=json -fsyntax-only ./1.h > 2.json
 /*
 {
   "id": "0x275917900a0",
