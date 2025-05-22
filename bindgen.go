@@ -264,8 +264,11 @@ func resolveEnumValue(node gjson.Result, defaultVal int) (string, int) {
 	}
 
 	if explicit != "" {
-		val := mylog.Check2(parseNumber(explicit))
-
+		val, e := parseNumber(explicit)
+		if e != nil {
+			mylog.CheckIgnore(e)
+			return "", defaultVal
+		}
 		return explicit, val
 	}
 	return "", defaultVal
