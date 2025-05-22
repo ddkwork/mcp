@@ -47,7 +47,7 @@ func extractFlags() []string {
 		case !strings.HasPrefix(s, "//"):
 			s = strings.TrimSpace(s)
 		case strings.HasPrefix(s, "#define"):
-			s = strings.TrimSpace(strings.TrimPrefix(s, "#define"))
+			s = strings.TrimSpace(strings.TrimPrefix(s, "#define")) //todo -D
 		case strings.HasPrefix(s, "#include"): //todo
 
 		default:
