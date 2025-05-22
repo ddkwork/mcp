@@ -13,5 +13,6 @@ func TestName(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
+	t.Skip("耗时，缓存ast，不建议使用")
 	Walk()
 }

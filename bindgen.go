@@ -127,6 +127,7 @@ type (
 	}
 )
 
+// todo msvc 注解
 func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
 	info := EnumInfo{}
@@ -148,7 +149,7 @@ func traverseNode(node gjson.Result) (result Result) {
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
 			qualType := n.Get("type.qualType").String()
-			mylog.Success(qualType)
+			//mylog.Success(qualType)
 			switch {
 			case strings.HasPrefix(qualType, "enum "):
 				info.Name = strings.TrimPrefix(qualType, "enum ")
