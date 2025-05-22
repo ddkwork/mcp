@@ -64,7 +64,7 @@ func runClangASTDump(file string) []byte {
 		"-ast-dump=json",
 		"-fsyntax-only", //-nostdinc++   -isystem
 	}
-	// includes := vswhere.New().VisualStudio().Includes  //todo ^+space
+	// includes := vswhere.New().VisualStudio().Includes  //todo ^+space for windows
 	// for _, include := range includes {
 	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk")
 	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
