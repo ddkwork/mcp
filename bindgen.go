@@ -287,7 +287,7 @@ func parseNumber(s string) (int, error) {
 }
 
 func resolveType(typeNode gjson.Result) string {
-	return strings.NewReplacer(
+	s := strings.NewReplacer(
 		"double", "float64",
 		"long double", "float128",
 		"int", "int",
@@ -320,6 +320,15 @@ func resolveType(typeNode gjson.Result) string {
 		"const char *", "string", //todo byte* ?
 	).Replace(typeNode.Get("qualType").String()) //todo bind mcp cpp json type check and convert code gen
 
+	if strings.Contains(s, "[") {
+		index := strings.Index(s, "[")
+		arrayType := s[:index]
+		arrayLength := s[index:]
+		return arrayLength + arrayType
+	}
+	return s
+
+	//////////////////////////////////////
 	typeMappings := map[string]string{
 		"unsigned long": "uint32",
 		"char *":        "string",
