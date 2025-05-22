@@ -13,7 +13,7 @@ import (
 )
 
 func Walk() {
-	filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
+	mylog.Check(filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
 		if filepath.Ext(path) == ".h" {
 			if filepath.Base(path) != "bridgemain.h" {
 				//return nil
@@ -21,7 +21,7 @@ func Walk() {
 			bind(path, runClangASTDump(path))
 		}
 		return err
-	})
+	}))
 }
 
 func bind[T string | []byte](path string, jsonData T) {
