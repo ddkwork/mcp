@@ -72,7 +72,7 @@ func runClangASTDump(path string) []byte {
 		"-ast-dump=json",
 		"-fsyntax-only",
 	}
-	includes := vswhere.New().VisualStudio().Includes //todo ^+space for windows
+	includes := vswhere.New().VisualStudio().Includes
 	for _, include := range includes {
 		arg = append(arg, "-I", include)
 	}
