@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -66,17 +67,14 @@ func runClangASTDump(path string) []byte {
 	path = mylog.Check2(filepath.Abs(path))
 	arg := []string{
 		"clang",
-		//`-x`, `c++`,
+		`-x`, `c++`,
 		"-Xclang",
 		"-ast-dump=json",
-		"-fsyntax-only", //-nostdinc++   -isystem
+		"-fsyntax-only",
 	}
 	includes := vswhere.New().VisualStudio().Includes //todo ^+space for windows
 	for _, include := range includes {
-		//include = strconv.Quote(include)
 		arg = append(arg, "-I", include)
-		//arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk")
-		//arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
 	}
 	arg = append(arg, "-I", filepath.Dir(path))
 
@@ -144,14 +142,25 @@ func traverseNode(node gjson.Result) (result Result) {
 	info := EnumInfo{}
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
-		file := n.Get("loc.file").String()
-		includedFrom := n.Get("loc.includedFrom.file").String()
+		skips := []string{
+			n.Get("loc.file").String(),
+			n.Get("loc.includedFrom.file").String(),
+			n.Get("inner.0.loc.expansionLoc.file").String(),
+			n.Get("inner.0.loc.expansionLoc.includedFrom.file").String(),
+		}
 		kind := n.Get("kind").String()
-		if strings.HasPrefix(file, "C:\\Program Files") ||
-			strings.HasPrefix(includedFrom, "C:\\Program Files") ||
-			kind == "BuiltinType" {
+		if kind == "BuiltinType" {
 			return
 		}
+		if slices.ContainsFunc(skips, func(s string) bool {
+			return strings.HasPrefix(s, "C:\\Program Files")
+		}) {
+			return
+		}
+		//if n.Get("name").String() != "_GUID" {
+		//	mylog.Struct(n)
+		//	os.Exit(666)
+		//}
 
 		switch kind {
 		case "EnumDecl":
