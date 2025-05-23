@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/ddkwork/ddk/vswhere"
 	"github.com/ddkwork/golibrary/mylog"
 	"github.com/ddkwork/golibrary/stream"
 	"github.com/tidwall/gjson"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -14,9 +16,12 @@ import (
 
 func Walk() {
 	mylog.Check(filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
-		if filepath.Ext(path) == ".h" {
+		switch filepath.Ext(path) {
+		case ".json":
+			mylog.Check(os.Remove(path))
+		case ".cpp", ".c", ".h":
 			if filepath.Base(path) != "bridgemain.h" {
-				//return nil
+				return nil
 			}
 			bind(path, runClangASTDump(path))
 		}
@@ -29,7 +34,7 @@ func bind[T string | []byte](path string, jsonData T) {
 	results := traverseNode(root)
 	var buffer bytes.Buffer
 	generateAllCode(&buffer, results)
-	stream.WriteGoFile(filepath.Join("tmp", filepath.Base(path)+"_gen.go"), buffer.String())
+	stream.WriteGoFile(filepath.Join(filepath.Dir(path), filepath.Base(path)+"_gen.go"), buffer.String())
 }
 
 var Flags = `
@@ -57,23 +62,29 @@ func extractFlags() []string {
 	return f
 }
 
-func runClangASTDump(file string) []byte {
+func runClangASTDump(path string) []byte {
+	path = mylog.Check2(filepath.Abs(path))
 	arg := []string{
-		"clang-cl",
+		"clang",
+		//`-x`, `c++`,
 		"-Xclang",
 		"-ast-dump=json",
 		"-fsyntax-only", //-nostdinc++   -isystem
 	}
-	// includes := vswhere.New().VisualStudio().Includes  //todo ^+space for windows
-	// for _, include := range includes {
-	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk")
-	arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
-	// }
+	includes := vswhere.New().VisualStudio().Includes //todo ^+space for windows
+	for _, include := range includes {
+		//include = strconv.Quote(include)
+		arg = append(arg, "-I", include)
+		//arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk")
+		//arg = append(arg, "-I"+"D:\\fork\\fakeWindows\\MiniSDK\\inc\\sdk\\crt")
+	}
+	arg = append(arg, "-I", filepath.Dir(path))
 
 	//arg = append(arg, extractFlags()...)//todo test flags
-	arg = append(arg, file)
+	arg = append(arg, path)
 	out := stream.RunCommandArgs(arg...)
-	stream.WriteTruncate(file+".json", out.Output)
+	mylog.Success(path)
+	stream.WriteTruncate(path+".json", out.Output)
 	return out.Output.Bytes()
 }
 
@@ -127,24 +138,33 @@ type (
 	}
 )
 
-// todo msvc 注解
+// todo msvc sal 注解
 func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
 	info := EnumInfo{}
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
-		switch kind := n.Get("kind").String(); kind {
+		file := n.Get("loc.file").String()
+		includedFrom := n.Get("loc.includedFrom.file").String()
+		kind := n.Get("kind").String()
+		if strings.HasPrefix(file, "C:\\Program Files") ||
+			strings.HasPrefix(includedFrom, "C:\\Program Files") ||
+			kind == "BuiltinType" {
+			return
+		}
+
+		switch kind {
 		case "EnumDecl":
 			info = parseEnum(n)
 			if info.Name != "" {
 				result.Enums = append(result.Enums, info)
 			}
 		case "RecordDecl":
-			if n.Get("name").String() != "_GUID" {
-				if n.Get("tagUsed").String() == "struct" {
-					result.Structs = append(result.Structs, parseStruct(n))
-				}
+			//if n.Get("name").String() != "_GUID" {
+			if n.Get("tagUsed").String() == "struct" {
+				result.Structs = append(result.Structs, parseStruct(n))
 			}
+			//}
 		case "FunctionDecl", "CXXMethodDecl":
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
@@ -303,6 +323,7 @@ func resolveType(typeNode gjson.Result) string {
 		"ULONGLONG", "uint64",
 		"ULong32", "uint32",
 		"ULong64", "uint64",
+		"UINT64", "uint64",
 		"UShort32", "uint16",
 		"ULongLong", "uint64",
 		"UShort", "uint16",

@@ -3,6 +3,7 @@ module mcp
 go 1.24.3
 
 require (
+	github.com/ddkwork/ddk v0.0.0-20250519211246-9fe08265bdbe
 	github.com/ddkwork/golibrary v0.1.2-0.20250519114835-7225dced60fe
 	github.com/tidwall/gjson v1.18.0
 )
