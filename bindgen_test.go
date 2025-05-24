@@ -11,7 +11,6 @@ import (
 
 func TestName(t *testing.T) {
 	//fakeError.Walk(".")
-	bind("api.h")
 	//bind("2.h")
 	//bind("pluginsdk/bridgemain.h")
 }

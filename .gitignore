@@ -4,3 +4,5 @@ log.log
 *.apk
 cmake-build-debug
 *.json
+/Huge.JSON.Viewer.0.4.13.20.Setup.exe
+/miqt-master.zip

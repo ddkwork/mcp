@@ -21,60 +21,6 @@ const (
 	HardwareWrite // 1
 	HardwareExecute // 2
 )
-type TSInputEncoding int // :60
-const (
-	TSInputEncodingUTF8 TSInputEncoding = iota // 0
-	TSInputEncodingUTF16LE // 1
-	TSInputEncodingUTF16BE // 2
-	TSInputEncodingCustom // 3
-)
-type TSSymbolType int // :67
-const (
-	TSSymbolTypeRegular TSSymbolType = iota // 0
-	TSSymbolTypeAnonymous // 1
-	TSSymbolTypeSupertype // 2
-	TSSymbolTypeAuxiliary // 3
-)
-type TSLogType int // :104
-const (
-	TSLogTypeParse TSLogType = iota // 0
-	TSLogTypeLex // 1
-)
-type TSQuantifier int // :140
-const (
-	TSQuantifierZero TSQuantifier = iota // 0
-	TSQuantifierZeroOrOne // 1
-	TSQuantifierZeroOrMore // 2
-	TSQuantifierOne // 3
-	TSQuantifierOneOrMore // 4
-)
-type TSQueryPredicateStepType int // :155
-const (
-	TSQueryPredicateStepTypeDone TSQueryPredicateStepType = iota // 0
-	TSQueryPredicateStepTypeCapture // 1
-	TSQueryPredicateStepTypeString // 2
-)
-type TSQueryError int // :166
-const (
-	TSQueryErrorNone TSQueryError = iota // 0
-	TSQueryErrorSyntax // 1
-	TSQueryErrorNodeType // 2
-	TSQueryErrorField // 3
-	TSQueryErrorCapture // 4
-	TSQueryErrorStructure // 5
-	TSQueryErrorLanguage // 6
-)
-type  int // :39
-const (
-	JSON_OBJECT  = iota // 0
-	JSON_ARRAY // 1
-	JSON_STRING // 2
-	JSON_INTEGER // 3
-	JSON_REAL // 4
-	JSON_TRUE // 5
-	JSON_FALSE // 6
-	JSON_NULL // 7
-)
 type XEDPARSE_STATUS int // :22
 const (
 	XEDPARSE_ERROR XEDPARSE_STATUS = iota // 0
@@ -135,6 +81,17 @@ const (
 	bpf_commandtext // 18
 	bpf_commandcondition // 19
 	bpf_logfile // 20
+)
+type  int // :39
+const (
+	JSON_OBJECT  = iota // 0
+	JSON_ARRAY // 1
+	JSON_STRING // 2
+	JSON_INTEGER // 3
+	JSON_REAL // 4
+	JSON_TRUE // 5
+	JSON_FALSE // 6
+	JSON_NULL // 7
 )
 type ValueType int // :239
 const (
