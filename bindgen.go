@@ -40,6 +40,7 @@ func bind(paths ...string) {
 		traverseNode(root, &result)
 	}
 	os.RemoveAll("tmp")
+	os.RemoveAll("sdk")
 	generateAllCode(result, "sdk", "sdk")
 }
 
@@ -184,7 +185,7 @@ func traverseNode(node gjson.Result, result *Result) {
 				info.Name = FindAnonymousName(node, n)
 			}
 			result.Enums.Update(info.Name, info)
-		case "RecordDecl":
+		case "RecordDecl", "CXXRecordDecl":
 			if n.Get("name").String() != "_GUID" {
 				if n.Get("tagUsed").String() == "struct" {
 					object := parseStruct(n)
