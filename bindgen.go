@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ddkwork/ddk/vswhere"
 	"github.com/ddkwork/golibrary/mylog"
+	"github.com/ddkwork/golibrary/safemap"
 	"github.com/ddkwork/golibrary/stream"
 	"github.com/tidwall/gjson"
 	"io/fs"
@@ -15,32 +16,40 @@ import (
 )
 
 func Walk() {
+	var paths []string
 	mylog.Check(filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
 		switch filepath.Ext(path) {
-		case ".json":
-			mylog.Check(os.Remove(path))
 		case ".cpp", ".c", ".h":
-			//if filepath.Base(path) != "bridgemain.h" {
-			if filepath.Base(path) != "_scriptapi_memory.h" {
-				return nil
-			}
-			bind(path, runClangASTDump(path))
+			path = mylog.Check2(filepath.Abs(path))
+			paths = append(paths, path)
 		}
 		return err
 	}))
+
+	result := Result{
+		path:      "",
+		Enums:     new(safemap.M[string, EnumInfo]),
+		Structs:   new(safemap.M[string, StructInfo]),
+		Functions: new(safemap.M[string, FunctionInfo]),
+		Typedefs:  new(safemap.M[string, string]),
+	}
+	for _, path := range paths {
+		root := gjson.Parse(string(runClangASTDump(path)))
+		traverseNode(root, &result)
+	}
+	os.RemoveAll("tmp")
+	generateAllCode(result, "sdk", "sdk")
 }
 
-func bind[T string | []byte](path string, jsonData T) {
-	root := gjson.Parse(string(jsonData))
-	results := traverseNode(root, path)
-	var buffer bytes.Buffer
-	generateAllCode(&buffer, results)
-	stream.WriteGoFile(filepath.Join(filepath.Dir(path), filepath.Base(path)+"_gen.go"), buffer.String())
-}
+//func bind[T string | []byte](path string, jsonData T) {
+//	root := gjson.Parse(string(jsonData))
+//	results := traverseNode(root, path)
+//	var buffer bytes.Buffer
+//	generateAllCode(&buffer, results)
+//	stream.WriteGoFile(filepath.Join(filepath.Dir(path), filepath.Base(path)+"_gen.go"), buffer.String())
+//}
 
 var Flags = `
-		"-fno-builtin"
-		"-nostdinc"
 #define _WIN32_WINNT 0x0601
 `
 
@@ -63,12 +72,15 @@ func extractFlags() []string {
 
 func runClangASTDump(path string) []byte {
 	path = mylog.Check2(filepath.Abs(path))
+	jsonPath := filepath.Join("cache", filepath.Base(path)+".json")
+	if stream.FileExists(jsonPath) {
+		return mylog.Check2(os.ReadFile(jsonPath))
+	}
+
 	arg := []string{
 		"clang",
 		`-x`, `c++`,
-		"-Xclang",
-		"-ast-dump=json",
-		"-fsyntax-only",
+		"-Xclang", "-ast-dump=json", "-fsyntax-only", "-fno-builtin", "-nostdinc",
 	}
 	includes := vswhere.New().VisualStudio().Includes
 	for _, include := range includes {
@@ -80,7 +92,7 @@ func runClangASTDump(path string) []byte {
 	arg = append(arg, path)
 	out := stream.RunCommandArgs(arg...)
 	mylog.Success(path)
-	stream.WriteTruncate(path+".json", out.Output)
+	stream.WriteTruncate(jsonPath, out.Output)
 	return out.Output.Bytes()
 }
 
@@ -127,19 +139,16 @@ type (
 	}
 
 	Result struct {
-		Enums     []EnumInfo
-		Structs   []StructInfo
-		Functions []FunctionInfo
-		Typedefs  map[string]string
+		path      string
+		Enums     *safemap.M[string, EnumInfo]
+		Structs   *safemap.M[string, StructInfo]
+		Functions *safemap.M[string, FunctionInfo]
+		Typedefs  *safemap.M[string, string]
 	}
 )
 
 // todo msvc sal 注解
-func traverseNode(node gjson.Result, path string) (result Result) {
-	result.Typedefs = make(map[string]string)
-	info := EnumInfo{}
-	object := StructInfo{}
-	function := FunctionInfo{}
+func traverseNode(node gjson.Result, result *Result) {
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
 		//mylog.Warning(n.Get("inner.0.kind").String())
@@ -157,12 +166,13 @@ func traverseNode(node gjson.Result, path string) (result Result) {
 		if !strings.Contains(n.Raw, "TranslationUnitDecl") && strings.Contains(n.Raw, "Program Files") {
 			return
 		}
+
 		s := n.Get("loc.includedFrom.file").String()
 		if s != "" {
-			mylog.Warning(filepath.Base(path), filepath.Base(s))
-			if filepath.Base(path) != filepath.Base(s) {
-				return
-			}
+			//mylog.Warning(filepath.Base(path), filepath.Base(s))
+			//if filepath.Base(path) != filepath.Base(s) {
+			//	return
+			//}
 		}
 
 		//if slices.ContainsFunc(skips, func(s string) bool {
@@ -176,27 +186,27 @@ func traverseNode(node gjson.Result, path string) (result Result) {
 		//}
 		switch kind {
 		case "EnumDecl":
-			info = parseEnum(n)
+			info := parseEnum(n)
 			if info.Name == "" {
 				info.Name = FindAnonymousName(node, n)
 			}
-			result.Enums = append(result.Enums, info)
+			result.Enums.Update(info.Name, info)
 		case "RecordDecl":
 			if n.Get("name").String() != "_GUID" {
 				if n.Get("tagUsed").String() == "struct" {
-					object = parseStruct(n)
+					object := parseStruct(n)
 					if object.Name == "" {
 						object.Name = FindAnonymousName(node, n)
 					}
-					result.Structs = append(result.Structs, object)
+					result.Structs.Update(object.Name, object)
 				}
 			}
 		case "FunctionDecl", "CXXMethodDecl":
-			function = parseFunction(n)
+			function := parseFunction(n)
 			if function.Name == "" {
 				function.Name = FindAnonymousName(node, n)
 			}
-			result.Functions = append(result.Functions, parseFunction(n))
+			result.Functions.Update(function.Name, function)
 		case "TypedefDecl":
 			//qualType := n.Get("type.qualType").String() //todo use id get name
 			//mylog.Success(qualType)
@@ -216,7 +226,6 @@ func traverseNode(node gjson.Result, path string) (result Result) {
 	}
 
 	processNode(node)
-	return
 }
 
 func FindAnonymousName(root, n gjson.Result) (name string) {
@@ -442,10 +451,11 @@ func formatLoc(loc gjson.Result) string {
 }
 
 // ----------------- 完整代码生成器 -----------------
-func generateAllCode(buffer *bytes.Buffer, results Result) {
-	// 生成枚举
-	buffer.WriteString("package main\n")
-	for _, e := range results.Enums {
+func generateAllCode(results Result, tagetDir, pkgName string) {
+	buffer := bytes.NewBufferString("")
+	buffer.WriteString("package " + pkgName + "\n")
+
+	for _, e := range results.Enums.Range() {
 		buffer.WriteString(fmt.Sprintf("type %s int // %s\nconst (\n", e.Name, e.Loc))
 		for i, m := range e.Members {
 			line := fmt.Sprintf("\t%s", m.Name)
@@ -457,11 +467,14 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 			buffer.WriteString(fmt.Sprintf("%s // %d\n", line, m.ComputedValue))
 		}
 		buffer.WriteString(")\n")
-
 	}
+	stream.WriteGoFile(filepath.Join(tagetDir, "enum_gen.go"), buffer.String())
 
 	// 生成结构体
-	for _, s := range results.Structs {
+	buffer.Reset()
+	buffer.WriteString("package " + pkgName + "\n")
+
+	for _, s := range results.Structs.Range() {
 		buffer.WriteString(fmt.Sprintf("// %s (%s)\n", s.Name, s.Loc))
 		buffer.WriteString(fmt.Sprintf("type %s struct {\n", s.Name))
 		for _, f := range s.Fields {
@@ -484,9 +497,13 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 				m.ReturnType))
 		}
 	}
+	stream.WriteGoFile(filepath.Join(tagetDir, "struct_gen.go"), buffer.String())
 
 	// 生成函数
-	for _, f := range results.Functions {
+	buffer.Reset()
+	buffer.WriteString("package " + pkgName + "\n")
+
+	for _, f := range results.Functions.Range() {
 		buffer.WriteString(fmt.Sprintf("// %s (%s)\n", f.Name, f.Loc))
 		buffer.WriteString(fmt.Sprintf("func %s(", f.Name))
 		params := make([]string, len(f.Params))
@@ -497,4 +514,5 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 			strings.Join(params, ", "),
 			f.ReturnType))
 	}
+	stream.WriteGoFile(filepath.Join(tagetDir, "func_gen.go"), buffer.String())
 }

@@ -2,9 +2,7 @@ package main
 
 import (
 	_ "embed"
-	"github.com/ddkwork/golibrary/mylog"
 	"github.com/tidwall/gjson"
-	"os"
 	"strings"
 	"testing"
 )
@@ -12,9 +10,9 @@ import (
 func TestName(t *testing.T) {
 	//fakeError.Walk(".")
 	//path:="2.h"
-	mylog.Check(os.RemoveAll("tmp"))
-	path := "pluginsdk/bridgemain.h"
-	bind(path, runClangASTDump(path))
+	//mylog.Check(os.RemoveAll("tmp"))
+	//path := "pluginsdk/bridgemain.h"
+	//bind(path, runClangASTDump(path))
 }
 
 func TestWalk(t *testing.T) {
