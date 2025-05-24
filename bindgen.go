@@ -168,17 +168,7 @@ func traverseNode(node gjson.Result) (result Result) {
 				if n.Get("tagUsed").String() == "struct" {
 					object = parseStruct(n)
 					if object.Name == "" {
-						id := n.Get("id").String()
-						node.Get("inner").ForEach(func(_, child gjson.Result) bool {
-							//mylog.Json("row", child.Raw)
-							if id == child.Get("inner.0.ownedTagDecl.id").String() {
-								name := child.Get("name").String()
-								object.Name = name
-								return false //break
-								//mylog.Struct(object)
-							}
-							return true
-						})
+						object.Name = FindAnonymousNames(node, n)
 					}
 					if object.Name != "" {
 						result.Structs = append(result.Structs, object)
@@ -194,23 +184,6 @@ func traverseNode(node gjson.Result) (result Result) {
 			case strings.HasPrefix(qualType, "enum "):
 				info.Name = strings.TrimPrefix(qualType, "enum ")
 				result.Enums = append(result.Enums, info)
-			//case strings.HasPrefix(qualType, "struct "):
-			//	object.Name = strings.TrimPrefix(qualType, "struct ")
-			//	result.Structs = append(result.Structs, object)
-			//case strings.HasPrefix(qualType, "union "):
-			//	object.Name = strings.TrimPrefix(qualType, "union ")
-			//	result.Structs = append(result.Structs, object)
-			//case strings.HasPrefix(qualType, "enum "):
-			//	info.Name = strings.TrimPrefix(qualType, "enum ")
-			//	result.Enums = append(result.Enums, info)
-			//case strings.HasPrefix(qualType, "class "):
-			//	object.Name = strings.TrimPrefix(qualType, "class ")
-			//	result.Structs = append(result.Structs, object)
-			//case strings.HasPrefix(qualType, "typedef "):
-			//	name := strings.TrimPrefix(qualType, "typedef ")
-			//	if target := n.Get("type.qualType").String(); target != "" {
-			//		result.Typedefs[name] = target
-			//	}
 			default:
 				name := n.Get("name").String()
 				if target := n.Get("type.qualType").String(); target != "" {
@@ -226,6 +199,22 @@ func traverseNode(node gjson.Result) (result Result) {
 	}
 
 	processNode(node)
+	return
+}
+
+func FindAnonymousNames(root, n gjson.Result) (name string) {
+	id := n.Get("id").String()
+	root.Get("inner").ForEach(func(_, child gjson.Result) bool { //todo 性能测试，但是这样似乎是准确的,对于处理typedef的匿名写法，通过id找到对应的名称
+		//mylog.Json("row", child.Raw)//nice way for debug
+		if id == child.Get("inner.0.ownedTagDecl.id").String() {
+			name = child.Get("name").String()
+			return false //break we can use iter.seq2
+		}
+		return true
+	})
+	if name == "" {
+		panic("not found name")
+	}
 	return
 }
 
@@ -379,7 +368,9 @@ func resolveType(typeNode gjson.Result) string {
 		"double", "float64",
 		"bool", "bool",
 		"void", "void",
-		"const char *", "string", //todo byte* ?
+		"size_t", "uint", //todo test size_t
+		"void *", "uintptr", //todo test uintptr
+		"const char *", "string",
 	).Replace(typeNode.Get("qualType").String()) //todo bind mcp cpp json type check and convert code gen
 
 	if strings.Contains(s, "[") {
