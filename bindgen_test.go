@@ -1,6 +1,9 @@
 package main
 
 import (
+	_ "embed"
+	"github.com/ddkwork/encoding/jsontree"
+	"github.com/ddkwork/ux"
 	"testing"
 )
 
@@ -16,4 +19,11 @@ func TestName(t *testing.T) {
 func TestWalk(t *testing.T) {
 	//t.Skip("耗时，缓存ast，不建议使用")
 	Walk()
+}
+
+//go:embed pluginsdk/_dbgfunctions.h.json
+var productInfo []byte
+
+func TestJsonTree(t *testing.T) {
+	ux.Run("jsonTree", jsontree.Layout(productInfo))
 }

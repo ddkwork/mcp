@@ -22,7 +22,7 @@ func Walk() {
 			mylog.Check(os.Remove(path))
 		case ".cpp", ".c", ".h":
 			if filepath.Base(path) != "bridgemain.h" {
-				return nil
+				//return nil
 			}
 			bind(path, runClangASTDump(path))
 		}
@@ -39,10 +39,8 @@ func bind[T string | []byte](path string, jsonData T) {
 }
 
 var Flags = `
-#include <intrin.h>
 		"-fno-builtin"
 		"-nostdinc"
-		//"-DVOID=void"
 #define _WIN32_WINNT 0x0601
 `
 
@@ -67,7 +65,7 @@ func runClangASTDump(path string) []byte {
 	path = mylog.Check2(filepath.Abs(path))
 	arg := []string{
 		"clang",
-		`-x`, `c++`,
+		//`-x`, `c++`,//cpp 模式只会生成更多无关的东西
 		"-Xclang",
 		"-ast-dump=json",
 		"-fsyntax-only",
@@ -140,8 +138,10 @@ type (
 func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
 	info := EnumInfo{}
+	object := StructInfo{}
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
+		//mylog.Warning(n.Get("inner.0.kind").String())
 		skips := []string{
 			n.Get("loc.file").String(),
 			n.Get("loc.includedFrom.file").String(),
@@ -157,11 +157,6 @@ func traverseNode(node gjson.Result) (result Result) {
 		}) {
 			return
 		}
-		//if n.Get("name").String() != "_GUID" {
-		//	mylog.Struct(n)
-		//	os.Exit(666)
-		//}
-
 		switch kind {
 		case "EnumDecl":
 			info = parseEnum(n)
@@ -169,20 +164,53 @@ func traverseNode(node gjson.Result) (result Result) {
 				result.Enums = append(result.Enums, info)
 			}
 		case "RecordDecl":
-			//if n.Get("name").String() != "_GUID" {
-			if n.Get("tagUsed").String() == "struct" {
-				result.Structs = append(result.Structs, parseStruct(n))
+			if n.Get("name").String() != "_GUID" {
+				if n.Get("tagUsed").String() == "struct" {
+					object = parseStruct(n)
+					if object.Name == "" {
+						id := n.Get("id").String()
+						node.Get("inner").ForEach(func(_, child gjson.Result) bool {
+							//mylog.Json("row", child.Raw)
+							if id == child.Get("inner.0.ownedTagDecl.id").String() {
+								name := child.Get("name").String()
+								object.Name = name
+								return false //break
+								//mylog.Struct(object)
+							}
+							return true
+						})
+					}
+					if object.Name != "" {
+						result.Structs = append(result.Structs, object)
+					}
+				}
 			}
-			//}
 		case "FunctionDecl", "CXXMethodDecl":
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
-			qualType := n.Get("type.qualType").String()
+			qualType := n.Get("type.qualType").String() //todo use id get name
 			//mylog.Success(qualType)
 			switch {
 			case strings.HasPrefix(qualType, "enum "):
 				info.Name = strings.TrimPrefix(qualType, "enum ")
 				result.Enums = append(result.Enums, info)
+			//case strings.HasPrefix(qualType, "struct "):
+			//	object.Name = strings.TrimPrefix(qualType, "struct ")
+			//	result.Structs = append(result.Structs, object)
+			//case strings.HasPrefix(qualType, "union "):
+			//	object.Name = strings.TrimPrefix(qualType, "union ")
+			//	result.Structs = append(result.Structs, object)
+			//case strings.HasPrefix(qualType, "enum "):
+			//	info.Name = strings.TrimPrefix(qualType, "enum ")
+			//	result.Enums = append(result.Enums, info)
+			//case strings.HasPrefix(qualType, "class "):
+			//	object.Name = strings.TrimPrefix(qualType, "class ")
+			//	result.Structs = append(result.Structs, object)
+			//case strings.HasPrefix(qualType, "typedef "):
+			//	name := strings.TrimPrefix(qualType, "typedef ")
+			//	if target := n.Get("type.qualType").String(); target != "" {
+			//		result.Typedefs[name] = target
+			//	}
 			default:
 				name := n.Get("name").String()
 				if target := n.Get("type.qualType").String(); target != "" {
@@ -436,7 +464,7 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 			for i, p := range m.Params {
 				params[i] = fmt.Sprintf("%s %s", p.Name, p.Type)
 			}
-			buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement\n}\n\n",
+			buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement make json packet\n}\n\n",
 				strings.Join(params, ", "),
 				m.ReturnType))
 		}
@@ -450,7 +478,7 @@ func generateAllCode(buffer *bytes.Buffer, results Result) {
 		for i, p := range f.Params {
 			params[i] = fmt.Sprintf("%s %s", p.Name, p.Type)
 		}
-		buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement\n}\n\n",
+		buffer.WriteString(fmt.Sprintf("%s) %s {\n\t// TODO: implement make json packet\n}\n\n",
 			strings.Join(params, ", "),
 			f.ReturnType))
 	}
