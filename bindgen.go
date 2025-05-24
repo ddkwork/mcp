@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-func Walk(root, tagetDir, pkgName string, yield func(string) bool) {
+func Walk(root, tagetDir string, yield func(string) bool) {
 	var paths []string
 	mylog.Check(filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if !yield(path) {
@@ -27,10 +27,10 @@ func Walk(root, tagetDir, pkgName string, yield func(string) bool) {
 		}
 		return err
 	}))
-	bind(tagetDir, pkgName, paths...)
+	bind(tagetDir, paths...)
 }
 
-func bind(tagetDir, pkgName string, paths ...string) {
+func bind(tagetDir string, paths ...string) {
 	result := Result{
 		Enums:     new(safemap.M[string, EnumInfo]),
 		Structs:   new(safemap.M[string, StructInfo]),
@@ -43,7 +43,7 @@ func bind(tagetDir, pkgName string, paths ...string) {
 	}
 	os.RemoveAll("tmp")
 	os.RemoveAll(tagetDir)
-	generateAllCode(result, tagetDir, pkgName)
+	generateAllCode(result, tagetDir)
 }
 
 var Flags = `
@@ -447,7 +447,8 @@ func formatLoc(loc gjson.Result) string {
 }
 
 // ----------------- 完整代码生成器 -----------------
-func generateAllCode(results Result, tagetDir, pkgName string) {
+func generateAllCode(results Result, tagetDir string) {
+	pkgName := filepath.Base(tagetDir)
 	buffer := bytes.NewBufferString("")
 	buffer.WriteString("package " + pkgName + "\n")
 

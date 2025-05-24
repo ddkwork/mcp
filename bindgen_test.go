@@ -17,7 +17,7 @@ func TestName(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
-	Walk("pluginsdk", "sdk", "sdk", func(s string) bool {
+	Walk("pluginsdk", "sdk", func(s string) bool {
 		return stream.DirDepth(s) == 1
 	})
 }
