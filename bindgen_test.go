@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"github.com/ddkwork/encoding/jsontree"
+	"github.com/ddkwork/golibrary/stream"
 	"github.com/ddkwork/ux"
 	"github.com/tidwall/gjson"
 	"strings"
@@ -16,7 +17,9 @@ func TestName(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
-	Walk()
+	Walk("pluginsdk", "sdk", "sdk", func(s string) bool {
+		return stream.DirDepth(s) == 1
+	})
 }
 
 //go:embed cache/_dbgfunctions.h.json

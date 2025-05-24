@@ -1,31 +1,4 @@
 package sdk
-type Color int // :8
-const (
-	RED Color = iota // 0
-	GREEN // 1
-	YELLOW = 99 // 99
-)
-type SEGMENTREG int // :14
-const (
-	SEG_DEFAULT SEGMENTREG = iota // 0
-	SEG_ES // 1
-	SEG_DS // 2
-	SEG_FS // 3
-	SEG_GS // 4
-	SEG_CS // 5
-	SEG_SS // 6
-)
-type HardwareType int // :10
-const (
-	HardwareAccess HardwareType = iota // 0
-	HardwareWrite // 1
-	HardwareExecute // 2
-)
-type XEDPARSE_STATUS int // :22
-const (
-	XEDPARSE_ERROR XEDPARSE_STATUS = iota // 0
-	XEDPARSE_OK = 1 // 1
-)
 type TRACERECORDBYTETYPE int // :59
 const (
 	InstructionBody TRACERECORDBYTETYPE = iota // 0
@@ -82,16 +55,130 @@ const (
 	bpf_commandcondition // 19
 	bpf_logfile // 20
 )
-type  int // :39
+type  int // :1168
 const (
-	JSON_OBJECT  = iota // 0
-	JSON_ARRAY // 1
-	JSON_STRING // 2
-	JSON_INTEGER // 3
-	JSON_REAL // 4
-	JSON_TRUE // 5
-	JSON_FALSE // 6
-	JSON_NULL // 7
+	GUI_DISASSEMBLE_AT  = iota // 0
+	GUI_SET_DEBUG_STATE // 1
+	GUI_ADD_MSG_TO_LOG // 2
+	GUI_CLEAR_LOG // 3
+	GUI_UPDATE_REGISTER_VIEW // 4
+	GUI_UPDATE_DISASSEMBLY_VIEW // 5
+	GUI_UPDATE_BREAKPOINTS_VIEW // 6
+	GUI_UPDATE_WINDOW_TITLE // 7
+	GUI_GET_WINDOW_HANDLE // 8
+	GUI_DUMP_AT // 9
+	GUI_SCRIPT_ADD // 10
+	GUI_SCRIPT_CLEAR // 11
+	GUI_SCRIPT_SETIP // 12
+	GUI_SCRIPT_ERROR // 13
+	GUI_SCRIPT_SETTITLE // 14
+	GUI_SCRIPT_SETINFOLINE // 15
+	GUI_SCRIPT_MESSAGE // 16
+	GUI_SCRIPT_MSGYN // 17
+	GUI_SYMBOL_LOG_ADD // 18
+	GUI_SYMBOL_LOG_CLEAR // 19
+	GUI_SYMBOL_SET_PROGRESS // 20
+	GUI_SYMBOL_UPDATE_MODULE_LIST // 21
+	GUI_REF_ADDCOLUMN // 22
+	GUI_REF_SETROWCOUNT // 23
+	GUI_REF_GETROWCOUNT // 24
+	GUI_REF_DELETEALLCOLUMNS // 25
+	GUI_REF_SETCELLCONTENT // 26
+	GUI_REF_GETCELLCONTENT // 27
+	GUI_REF_RELOADDATA // 28
+	GUI_REF_SETSINGLESELECTION // 29
+	GUI_REF_SETPROGRESS // 30
+	GUI_REF_SETCURRENTTASKPROGRESS // 31
+	GUI_REF_SETSEARCHSTARTCOL // 32
+	GUI_STACK_DUMP_AT // 33
+	GUI_UPDATE_DUMP_VIEW // 34
+	GUI_UPDATE_THREAD_VIEW // 35
+	GUI_ADD_RECENT_FILE // 36
+	GUI_SET_LAST_EXCEPTION // 37
+	GUI_GET_DISASSEMBLY // 38
+	GUI_MENU_ADD // 39
+	GUI_MENU_ADD_ENTRY // 40
+	GUI_MENU_ADD_SEPARATOR // 41
+	GUI_MENU_CLEAR // 42
+	GUI_SELECTION_GET // 43
+	GUI_SELECTION_SET // 44
+	GUI_GETLINE_WINDOW // 45
+	GUI_AUTOCOMPLETE_ADDCMD // 46
+	GUI_AUTOCOMPLETE_DELCMD // 47
+	GUI_AUTOCOMPLETE_CLEARALL // 48
+	GUI_SCRIPT_ENABLEHIGHLIGHTING // 49
+	GUI_ADD_MSG_TO_STATUSBAR // 50
+	GUI_UPDATE_SIDEBAR // 51
+	GUI_REPAINT_TABLE_VIEW // 52
+	GUI_UPDATE_PATCHES // 53
+	GUI_UPDATE_CALLSTACK // 54
+	GUI_UPDATE_SEHCHAIN // 55
+	GUI_SYMBOL_REFRESH_CURRENT // 56
+	GUI_UPDATE_MEMORY_VIEW // 57
+	GUI_REF_INITIALIZE // 58
+	GUI_LOAD_SOURCE_FILE // 59
+	GUI_MENU_SET_ICON // 60
+	GUI_MENU_SET_ENTRY_ICON // 61
+	GUI_SHOW_CPU // 62
+	GUI_ADD_QWIDGET_TAB // 63
+	GUI_SHOW_QWIDGET_TAB // 64
+	GUI_CLOSE_QWIDGET_TAB // 65
+	GUI_EXECUTE_ON_GUI_THREAD // 66
+	GUI_UPDATE_TIME_WASTED_COUNTER // 67
+	GUI_SET_GLOBAL_NOTES // 68
+	GUI_GET_GLOBAL_NOTES // 69
+	GUI_SET_DEBUGGEE_NOTES // 70
+	GUI_GET_DEBUGGEE_NOTES // 71
+	GUI_DUMP_AT_N // 72
+	GUI_DISPLAY_WARNING // 73
+	GUI_REGISTER_SCRIPT_LANG // 74
+	GUI_UNREGISTER_SCRIPT_LANG // 75
+	GUI_UPDATE_ARGUMENT_VIEW // 76
+	GUI_FOCUS_VIEW // 77
+	GUI_UPDATE_WATCH_VIEW // 78
+	GUI_LOAD_GRAPH // 79
+	GUI_GRAPH_AT // 80
+	GUI_UPDATE_GRAPH_VIEW // 81
+	GUI_SET_LOG_ENABLED // 82
+	GUI_ADD_FAVOURITE_TOOL // 83
+	GUI_ADD_FAVOURITE_COMMAND // 84
+	GUI_SET_FAVOURITE_TOOL_SHORTCUT // 85
+	GUI_FOLD_DISASSEMBLY // 86
+	GUI_SELECT_IN_MEMORY_MAP // 87
+	GUI_GET_ACTIVE_VIEW // 88
+	GUI_MENU_SET_ENTRY_CHECKED // 89
+	GUI_ADD_INFO_LINE // 90
+	GUI_PROCESS_EVENTS // 91
+	GUI_TYPE_ADDNODE // 92
+	GUI_TYPE_CLEAR // 93
+	GUI_UPDATE_TYPE_WIDGET // 94
+	GUI_CLOSE_APPLICATION // 95
+	GUI_MENU_SET_VISIBLE // 96
+	GUI_MENU_SET_ENTRY_VISIBLE // 97
+	GUI_MENU_SET_NAME // 98
+	GUI_MENU_SET_ENTRY_NAME // 99
+	GUI_FLUSH_LOG // 100
+	GUI_MENU_SET_ENTRY_HOTKEY // 101
+	GUI_REF_SEARCH_GETROWCOUNT // 102
+	GUI_REF_SEARCH_GETCELLCONTENT // 103
+	GUI_MENU_REMOVE // 104
+	GUI_REF_ADDCOMMAND // 105
+	GUI_OPEN_TRACE_FILE // 106
+	GUI_UPDATE_TRACE_BROWSER // 107
+	GUI_INVALIDATE_SYMBOL_SOURCE // 108
+	GUI_GET_CURRENT_GRAPH // 109
+	GUI_SHOW_REF // 110
+	GUI_SELECT_IN_SYMBOLS_TAB // 111
+	GUI_GOTO_TRACE // 112
+	GUI_SHOW_TRACE // 113
+	GUI_GET_MAIN_THREAD_ID // 114
+	GUI_ADD_MSG_TO_LOG_HTML // 115
+	GUI_IS_LOG_ENABLED // 116
+	GUI_IS_DEBUGGER_FOCUSED_UNUSED // 117
+	GUI_SAVE_LOG // 118
+	GUI_REDIRECT_LOG // 119
+	GUI_STOP_REDIRECT_LOG // 120
+	GUI_SHOW_THREADS // 121
 )
 type ValueType int // :239
 const (
@@ -144,6 +231,12 @@ const (
 	FORMAT_SUCCESS // 1
 	FORMAT_ERROR_MESSAGE // 2
 	FORMAT_BUFFER_TOO_SMALL // 3
+)
+type HardwareType int // :10
+const (
+	HardwareAccess HardwareType = iota // 0
+	HardwareWrite // 1
+	HardwareExecute // 2
 )
 type FlagEnum int // :10
 const (
@@ -260,165 +353,4 @@ const (
 	Function SymbolType = iota // 0
 	Import // 1
 	Export // 2
-)
-type _IMAGEHLP_SYMBOL_TYPE_INFO int // :2679
-const (
-	TI_GET_SYMTAG _IMAGEHLP_SYMBOL_TYPE_INFO = iota // 0
-	TI_GET_SYMNAME // 1
-	TI_GET_LENGTH // 2
-	TI_GET_TYPE // 3
-	TI_GET_TYPEID // 4
-	TI_GET_BASETYPE // 5
-	TI_GET_ARRAYINDEXTYPEID // 6
-	TI_FINDCHILDREN // 7
-	TI_GET_DATAKIND // 8
-	TI_GET_ADDRESSOFFSET // 9
-	TI_GET_OFFSET // 10
-	TI_GET_VALUE // 11
-	TI_GET_COUNT // 12
-	TI_GET_CHILDRENCOUNT // 13
-	TI_GET_BITPOSITION // 14
-	TI_GET_VIRTUALBASECLASS // 15
-	TI_GET_VIRTUALTABLESHAPEID // 16
-	TI_GET_VIRTUALBASEPOINTEROFFSET // 17
-	TI_GET_CLASSPARENTID // 18
-	TI_GET_NESTED // 19
-	TI_GET_SYMINDEX // 20
-	TI_GET_LEXICALPARENT // 21
-	TI_GET_ADDRESS // 22
-	TI_GET_THISADJUST // 23
-	TI_GET_UDTKIND // 24
-	TI_IS_EQUIV_TO // 25
-	TI_GET_CALLING_CONVENTION // 26
-	TI_IS_CLOSE_EQUIV_TO // 27
-	TI_GTIEX_REQS_VALID // 28
-	TI_GET_VIRTUALBASEOFFSET // 29
-	TI_GET_VIRTUALBASEDISPINDEX // 30
-	TI_GET_IS_REFERENCE // 31
-	TI_GET_INDIRECTVIRTUALBASECLASS // 32
-	IMAGEHLP_SYMBOL_TYPE_INFO_MAX // 33
-)
-type _MINIDUMP_STREAM_TYPE int // :3683
-const (
-	UnusedStream _MINIDUMP_STREAM_TYPE = iota // 0
-	ReservedStream0 = 1 // 1
-	ReservedStream1 = 2 // 2
-	ThreadListStream = 3 // 3
-	ModuleListStream = 4 // 4
-	MemoryListStream = 5 // 5
-	ExceptionStream = 6 // 6
-	SystemInfoStream = 7 // 7
-	ThreadExListStream = 8 // 8
-	Memory64ListStream = 9 // 9
-	CommentStreamA = 10 // 10
-	CommentStreamW = 11 // 11
-	HandleDataStream = 12 // 12
-	FunctionTableStream = 13 // 13
-	UnloadedModuleListStream = 14 // 14
-	MiscInfoStream = 15 // 15
-	MemoryInfoListStream = 16 // 16
-	ThreadInfoListStream = 17 // 17
-	HandleOperationListStream = 18 // 18
-	TokenStream = 19 // 19
-	ceStreamNull = 32768 // 32768
-	ceStreamSystemInfo = 32769 // 32769
-	ceStreamException = 32770 // 32770
-	ceStreamModuleList = 32771 // 32771
-	ceStreamProcessList = 32772 // 32772
-	ceStreamThreadList = 32773 // 32773
-	ceStreamThreadContextList = 32774 // 32774
-	ceStreamThreadCallStackList = 32775 // 32775
-	ceStreamMemoryVirtualList = 32776 // 32776
-	ceStreamMemoryPhysicalList = 32777 // 32777
-	ceStreamBucketParameters = 32778 // 32778
-	ceStreamProcessModuleMap = 32779 // 32779
-	ceStreamDiagnosisList = 32780 // 32780
-	LastReservedStream = 65535 // 65535
-)
-type _MINIDUMP_HANDLE_OBJECT_INFORMATION_TYPE int // :4019
-const (
-	MiniHandleObjectInformationNone _MINIDUMP_HANDLE_OBJECT_INFORMATION_TYPE = iota // 0
-	MiniThreadInformation1 // 1
-	MiniMutantInformation1 // 2
-	MiniMutantInformation2 // 3
-	MiniProcessInformation1 // 4
-	MiniProcessInformation2 // 5
-	MiniHandleObjectInformationTypeMax // 6
-)
-type _MINIDUMP_CALLBACK_TYPE int // :4319
-const (
-	ModuleCallback _MINIDUMP_CALLBACK_TYPE = iota // 0
-	ThreadCallback // 1
-	ThreadExCallback // 2
-	IncludeThreadCallback // 3
-	IncludeModuleCallback // 4
-	MemoryCallback // 5
-	CancelCallback // 6
-	WriteKernelMinidumpCallback // 7
-	KernelMinidumpStatusCallback // 8
-	RemoveMemoryCallback // 9
-	IncludeVmRegionCallback // 10
-	IoStartCallback // 11
-	IoWriteAllCallback // 12
-	IoFinishCallback // 13
-	ReadMemoryFailureCallback // 14
-	SecondaryFlagsCallback // 15
-)
-type _THREAD_WRITE_FLAGS int // :4370
-const (
-	ThreadWriteThread _THREAD_WRITE_FLAGS = iota // 1
-	ThreadWriteStack = 2 // 2
-	ThreadWriteContext = 4 // 4
-	ThreadWriteBackingStore = 8 // 8
-	ThreadWriteInstructionWindow = 16 // 16
-	ThreadWriteThreadData = 32 // 32
-	ThreadWriteThreadInfo = 64 // 64
-)
-type _MODULE_WRITE_FLAGS int // :4402
-const (
-	ModuleWriteModule _MODULE_WRITE_FLAGS = iota // 1
-	ModuleWriteDataSeg = 2 // 2
-	ModuleWriteMiscRecord = 4 // 4
-	ModuleWriteCvRecord = 8 // 8
-	ModuleReferencedByMemory = 16 // 16
-	ModuleWriteTlsData = 32 // 32
-	ModuleWriteCodeSegs = 64 // 64
-)
-type _MINIDUMP_TYPE int // :4554
-const (
-	MiniDumpNormal _MINIDUMP_TYPE = iota // 0
-	MiniDumpWithDataSegs = 1 // 1
-	MiniDumpWithFullMemory = 2 // 2
-	MiniDumpWithHandleData = 4 // 4
-	MiniDumpFilterMemory = 8 // 8
-	MiniDumpScanMemory = 16 // 16
-	MiniDumpWithUnloadedModules = 32 // 32
-	MiniDumpWithIndirectlyReferencedMemory = 64 // 64
-	MiniDumpFilterModulePaths = 128 // 128
-	MiniDumpWithProcessThreadData = 256 // 256
-	MiniDumpWithPrivateReadWriteMemory = 512 // 512
-	MiniDumpWithoutOptionalData = 1024 // 1024
-	MiniDumpWithFullMemoryInfo = 2048 // 2048
-	MiniDumpWithThreadInfo = 4096 // 4096
-	MiniDumpWithCodeSegs = 8192 // 8192
-	MiniDumpWithoutAuxiliaryState = 16384 // 16384
-	MiniDumpWithFullAuxiliaryState = 32768 // 32768
-	MiniDumpWithPrivateWriteCopyMemory = 65536 // 65536
-	MiniDumpIgnoreInaccessibleMemory = 131072 // 131072
-	MiniDumpWithTokenInformation = 262144 // 262144
-	MiniDumpValidTypeFlags = 524287 // 524287
-)
-type _MINIDUMP_SECONDARY_FLAGS int // :4590
-const (
-	MiniSecondaryWithoutPowerInfo _MINIDUMP_SECONDARY_FLAGS = iota // 1
-	MiniSecondaryValidFlags = 1 // 1
-)
-type _LZ4_STATUS int // D:\workspace\workspace\mcp\pluginsdk\lz4\lz4file.h:4
-const (
-	LZ4_SUCCESS _LZ4_STATUS = iota // 0
-	LZ4_FAILED_OPEN_INPUT // 1
-	LZ4_FAILED_OPEN_OUTPUT // 2
-	LZ4_NOT_ENOUGH_MEMORY // 3
-	LZ4_INVALID_ARCHIVE // 4
-	LZ4_CORRUPTED_ARCHIVE // 5
 )

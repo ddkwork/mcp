@@ -15,20 +15,22 @@ import (
 	"strings"
 )
 
-func Walk() {
+func Walk(root, tagetDir, pkgName string, yield func(string) bool) {
 	var paths []string
-	mylog.Check(filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
+	mylog.Check(filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+		if !yield(path) {
+			return err
+		}
 		switch filepath.Ext(path) {
 		case ".cpp", ".c", ".h":
-			path = mylog.Check2(filepath.Abs(path))
 			paths = append(paths, path)
 		}
 		return err
 	}))
-	bind(paths...)
+	bind(tagetDir, pkgName, paths...)
 }
 
-func bind(paths ...string) {
+func bind(tagetDir, pkgName string, paths ...string) {
 	result := Result{
 		Enums:     new(safemap.M[string, EnumInfo]),
 		Structs:   new(safemap.M[string, StructInfo]),
@@ -40,8 +42,8 @@ func bind(paths ...string) {
 		traverseNode(root, &result)
 	}
 	os.RemoveAll("tmp")
-	os.RemoveAll("sdk")
-	generateAllCode(result, "sdk", "sdk")
+	os.RemoveAll(tagetDir)
+	generateAllCode(result, tagetDir, pkgName)
 }
 
 var Flags = `
