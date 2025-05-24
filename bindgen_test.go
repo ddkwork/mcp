@@ -13,7 +13,7 @@ func TestName(t *testing.T) {
 	//fakeError.Walk(".")
 	//path:="2.h"
 	mylog.Check(os.RemoveAll("tmp"))
-	path := "pluginsdk/_scriptapi_memory.h"
+	path := "pluginsdk/bridgemain.h"
 	bind(path, runClangASTDump(path))
 }
 

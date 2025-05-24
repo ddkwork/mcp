@@ -65,7 +65,7 @@ func runClangASTDump(path string) []byte {
 	path = mylog.Check2(filepath.Abs(path))
 	arg := []string{
 		"clang",
-		//`-x`, `c++`,//cpp 模式只会生成更多无关的东西
+		`-x`, `c++`,
 		"-Xclang",
 		"-ast-dump=json",
 		"-fsyntax-only",
