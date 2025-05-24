@@ -2,6 +2,8 @@ package main
 
 import (
 	_ "embed"
+	"github.com/ddkwork/encoding/jsontree"
+	"github.com/ddkwork/ux"
 	"github.com/tidwall/gjson"
 	"strings"
 	"testing"
@@ -9,23 +11,20 @@ import (
 
 func TestName(t *testing.T) {
 	//fakeError.Walk(".")
-	//path:="2.h"
-	//mylog.Check(os.RemoveAll("tmp"))
-	//path := "pluginsdk/bridgemain.h"
-	//bind(path, runClangASTDump(path))
+	//bind("2.h")
+	bind("pluginsdk/bridgemain.h")
 }
 
 func TestWalk(t *testing.T) {
-	//t.Skip("耗时，缓存ast，不建议使用")
 	Walk()
 }
 
-////go:embed pluginsdk/_dbgfunctions.h.json
-//var productInfo []byte
-//
-//func TestJsonTree(t *testing.T) {
-//	ux.Run("jsonTree", jsontree.Layout(productInfo))
-//}
+//go:embed cache/_dbgfunctions.h.json
+var productInfo []byte
+
+func TestJsonTree(t *testing.T) {
+	ux.Run("jsonTree", jsontree.Layout(productInfo))
+}
 
 func TestSkipWindowsSdkDir(t *testing.T) {
 	t.Skip("ok")

@@ -25,7 +25,10 @@ func Walk() {
 		}
 		return err
 	}))
+	bind(paths...)
+}
 
+func bind(paths ...string) {
 	result := Result{
 		path:      "",
 		Enums:     new(safemap.M[string, EnumInfo]),
@@ -40,14 +43,6 @@ func Walk() {
 	os.RemoveAll("tmp")
 	generateAllCode(result, "sdk", "sdk")
 }
-
-//func bind[T string | []byte](path string, jsonData T) {
-//	root := gjson.Parse(string(jsonData))
-//	results := traverseNode(root, path)
-//	var buffer bytes.Buffer
-//	generateAllCode(&buffer, results)
-//	stream.WriteGoFile(filepath.Join(filepath.Dir(path), filepath.Base(path)+"_gen.go"), buffer.String())
-//}
 
 var Flags = `
 #define _WIN32_WINNT 0x0601
