@@ -2,7 +2,5 @@ vendor
 log.log
 .idea
 *.apk
-tmp
 cmake-build-debug
-/bridgemain.h.json
 *.json
