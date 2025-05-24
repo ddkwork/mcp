@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -21,8 +20,9 @@ func Walk() {
 		case ".json":
 			mylog.Check(os.Remove(path))
 		case ".cpp", ".c", ".h":
-			if filepath.Base(path) != "bridgemain.h" {
-				//return nil
+			//if filepath.Base(path) != "bridgemain.h" {
+			if filepath.Base(path) != "_scriptapi_memory.h" {
+				return nil
 			}
 			bind(path, runClangASTDump(path))
 		}
@@ -32,7 +32,7 @@ func Walk() {
 
 func bind[T string | []byte](path string, jsonData T) {
 	root := gjson.Parse(string(jsonData))
-	results := traverseNode(root)
+	results := traverseNode(root, path)
 	var buffer bytes.Buffer
 	generateAllCode(&buffer, results)
 	stream.WriteGoFile(filepath.Join(filepath.Dir(path), filepath.Base(path)+"_gen.go"), buffer.String())
@@ -135,7 +135,7 @@ type (
 )
 
 // todo msvc sal 注解
-func traverseNode(node gjson.Result) (result Result) {
+func traverseNode(node gjson.Result, path string) (result Result) {
 	result.Typedefs = make(map[string]string)
 	info := EnumInfo{}
 	object := StructInfo{}
@@ -143,21 +143,37 @@ func traverseNode(node gjson.Result) (result Result) {
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
 		//mylog.Warning(n.Get("inner.0.kind").String())
-		skips := []string{
-			n.Get("loc.file").String(),
-			n.Get("loc.includedFrom.file").String(),
-			n.Get("inner.0.loc.expansionLoc.file").String(),
-			n.Get("inner.0.loc.expansionLoc.includedFrom.file").String(),
-		}
+		//skips := []string{
+		//	n.Get("loc.file").String(),
+		//	n.Get("loc.includedFrom.file").String(),
+		//	n.Get("inner.0.loc.expansionLoc.file").String(),
+		//	n.Get("inner.0.loc.expansionLoc.includedFrom.file").String(),
+		//	n.Get("inner.0.loc.includedFrom.file").String(),
+		//}
 		kind := n.Get("kind").String()
 		if kind == "BuiltinType" {
 			return
 		}
-		if slices.ContainsFunc(skips, func(s string) bool {
-			return strings.HasPrefix(s, "C:\\Program Files")
-		}) {
+		if !strings.Contains(n.Raw, "TranslationUnitDecl") && strings.Contains(n.Raw, "Program Files") {
 			return
 		}
+		s := n.Get("loc.includedFrom.file").String()
+		if s != "" {
+			mylog.Warning(filepath.Base(path), filepath.Base(s))
+			if filepath.Base(path) != filepath.Base(s) {
+				return
+			}
+		}
+
+		//if slices.ContainsFunc(skips, func(s string) bool {
+		//	return strings.HasPrefix(s, "C:\\Program Files")
+		//	if s != "" {
+		//		return filepath.Base(path) != filepath.Base(s)
+		//	}
+		//	return strings.HasPrefix(s, "C:\\Program Files")
+		//}) {
+		//	return
+		//}
 		switch kind {
 		case "EnumDecl":
 			info = parseEnum(n)
@@ -214,7 +230,7 @@ func FindAnonymousName(root, n gjson.Result) (name string) {
 		return true
 	})
 	if name == "" {
-		mylog.Json("row", n.Raw) //nice way for debug
+		//mylog.Json("row", n.Raw) //nice way for debug
 		mylog.Todo("not found Anonymous Name")
 		//panic("not found name")
 	}
@@ -358,6 +374,7 @@ func resolveType(typeNode gjson.Result) string {
 		"UShort", "uint16",
 		"UChar", "byte",
 		"UByte", "byte",
+		"CHAR", "int8",
 		"unsigned int", "uint",
 		"long long", "int64",
 		"unsigned long long", "uint64",
@@ -370,7 +387,10 @@ func resolveType(typeNode gjson.Result) string {
 		"float", "float32",
 		"double", "float64",
 		"bool", "bool",
+		"BOOL", "bool",
 		"void", "void",
+		"PVOID", "uintptr",
+		"PCHAR", "int8*",
 		"size_t", "uint", //todo test size_t
 		//"void *", "uintptr", //todo test uintptr
 		//"void", "uintptr", //todo test uintptr
