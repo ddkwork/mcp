@@ -140,7 +140,7 @@ type (
 	}
 )
 
-// todo msvc sal 注解
+// todo msvc sal 注解，add callback
 func traverseNode(node gjson.Result, result *Result) {
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
