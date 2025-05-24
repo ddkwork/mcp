@@ -30,7 +30,6 @@ func Walk() {
 
 func bind(paths ...string) {
 	result := Result{
-		path:      "",
 		Enums:     new(safemap.M[string, EnumInfo]),
 		Structs:   new(safemap.M[string, StructInfo]),
 		Functions: new(safemap.M[string, FunctionInfo]),
@@ -134,7 +133,6 @@ type (
 	}
 
 	Result struct {
-		path      string
 		Enums     *safemap.M[string, EnumInfo]
 		Structs   *safemap.M[string, StructInfo]
 		Functions *safemap.M[string, FunctionInfo]
