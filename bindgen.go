@@ -162,7 +162,7 @@ func traverseNode(node gjson.Result) (result Result) {
 		case "EnumDecl":
 			info = parseEnum(n)
 			if info.Name == "" {
-				info.Name = FindAnonymousNames(node, n)
+				info.Name = FindAnonymousName(node, n)
 			}
 			result.Enums = append(result.Enums, info)
 		case "RecordDecl":
@@ -170,7 +170,7 @@ func traverseNode(node gjson.Result) (result Result) {
 				if n.Get("tagUsed").String() == "struct" {
 					object = parseStruct(n)
 					if object.Name == "" {
-						object.Name = FindAnonymousNames(node, n)
+						object.Name = FindAnonymousName(node, n)
 					}
 					result.Structs = append(result.Structs, object)
 				}
@@ -178,7 +178,7 @@ func traverseNode(node gjson.Result) (result Result) {
 		case "FunctionDecl", "CXXMethodDecl":
 			function = parseFunction(n)
 			if function.Name == "" {
-				function.Name = FindAnonymousNames(node, n)
+				function.Name = FindAnonymousName(node, n)
 			}
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
@@ -203,7 +203,7 @@ func traverseNode(node gjson.Result) (result Result) {
 	return
 }
 
-func FindAnonymousNames(root, n gjson.Result) (name string) {
+func FindAnonymousName(root, n gjson.Result) (name string) {
 	id := n.Get("id").String()
 	root.Get("inner").ForEach(func(_, child gjson.Result) bool { //todo 性能测试，但是这样似乎是准确的,对于处理typedef的匿名写法，通过id找到对应的名称
 		//mylog.Json("row", child.Raw)//nice way for debug
@@ -215,7 +215,7 @@ func FindAnonymousNames(root, n gjson.Result) (name string) {
 	})
 	if name == "" {
 		mylog.Json("row", n.Raw) //nice way for debug
-		mylog.Todo("not found name")
+		mylog.Todo("not found Anonymous Name")
 		//panic("not found name")
 	}
 	return
