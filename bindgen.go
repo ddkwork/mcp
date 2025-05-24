@@ -139,6 +139,7 @@ func traverseNode(node gjson.Result) (result Result) {
 	result.Typedefs = make(map[string]string)
 	info := EnumInfo{}
 	object := StructInfo{}
+	function := FunctionInfo{}
 	var processNode func(gjson.Result)
 	processNode = func(n gjson.Result) {
 		//mylog.Warning(n.Get("inner.0.kind").String())
@@ -160,9 +161,10 @@ func traverseNode(node gjson.Result) (result Result) {
 		switch kind {
 		case "EnumDecl":
 			info = parseEnum(n)
-			if info.Name != "" {
-				result.Enums = append(result.Enums, info)
+			if info.Name == "" {
+				info.Name = FindAnonymousNames(node, n)
 			}
+			result.Enums = append(result.Enums, info)
 		case "RecordDecl":
 			if n.Get("name").String() != "_GUID" {
 				if n.Get("tagUsed").String() == "struct" {
@@ -170,26 +172,25 @@ func traverseNode(node gjson.Result) (result Result) {
 					if object.Name == "" {
 						object.Name = FindAnonymousNames(node, n)
 					}
-					if object.Name != "" {
-						result.Structs = append(result.Structs, object)
-					}
+					result.Structs = append(result.Structs, object)
 				}
 			}
 		case "FunctionDecl", "CXXMethodDecl":
+			function = parseFunction(n)
+			if function.Name == "" {
+				function.Name = FindAnonymousNames(node, n)
+			}
 			result.Functions = append(result.Functions, parseFunction(n))
 		case "TypedefDecl":
-			qualType := n.Get("type.qualType").String() //todo use id get name
+			//qualType := n.Get("type.qualType").String() //todo use id get name
 			//mylog.Success(qualType)
-			switch {
-			case strings.HasPrefix(qualType, "enum "):
-				info.Name = strings.TrimPrefix(qualType, "enum ")
-				result.Enums = append(result.Enums, info)
-			default:
-				name := n.Get("name").String()
-				if target := n.Get("type.qualType").String(); target != "" {
-					result.Typedefs[name] = target
-				}
-			}
+			//case strings.HasPrefix(qualType, "enum "):
+			//	info.Name = strings.TrimPrefix(qualType, "enum ")
+			//	result.Enums = append(result.Enums, info)
+			//name := n.Get("name").String()
+			//if target := n.Get("type.qualType").String(); target != "" {
+			//	result.Typedefs[name] = target
+			//}
 		}
 
 		n.Get("inner").ForEach(func(_, child gjson.Result) bool {
@@ -213,7 +214,9 @@ func FindAnonymousNames(root, n gjson.Result) (name string) {
 		return true
 	})
 	if name == "" {
-		panic("not found name")
+		mylog.Json("row", n.Raw) //nice way for debug
+		mylog.Todo("not found name")
+		//panic("not found name")
 	}
 	return
 }
@@ -369,7 +372,8 @@ func resolveType(typeNode gjson.Result) string {
 		"bool", "bool",
 		"void", "void",
 		"size_t", "uint", //todo test size_t
-		"void *", "uintptr", //todo test uintptr
+		//"void *", "uintptr", //todo test uintptr
+		//"void", "uintptr", //todo test uintptr
 		"const char *", "string",
 	).Replace(typeNode.Get("qualType").String()) //todo bind mcp cpp json type check and convert code gen
 
